@@ -13,7 +13,7 @@ our %SPEC;
 
 sub _connect {
     my $args = shift;
-    DBI->connect("dbi:SQLite:database=$args->{db_file}", undef, undef, {RaiseError=>1});
+    DBI->connect("dbi:SQLite:dbname=$args->{db_file}", undef, undef, {RaiseError=>1});
 }
 
 our %args_common = (
@@ -45,7 +45,7 @@ sub list_sqlite_tables {
 
     my %args = @_;
     my $dbh = _connect(\%args);
-    DBIx::Util::Schema::list_tables($dbh);
+    [DBIx::Util::Schema::list_tables($dbh)];
 }
 
 $SPEC{list_sqlite_columns} = {
@@ -62,7 +62,7 @@ sub list_sqlite_columns {
 
     my %args = @_;
     my $dbh = _connect(\%args);
-    DBIx::Util::Schema::list_columns($dbh, $args{table});
+    [DBIx::Util::Schema::list_columns($dbh, $args{table})];
 }
 
 1;
