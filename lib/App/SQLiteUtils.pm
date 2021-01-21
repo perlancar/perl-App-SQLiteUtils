@@ -34,6 +34,11 @@ our %arg1_table = (
 
 $SPEC{list_sqlite_tables} = {
     v => 1.1,
+    description => <<'_',
+
+See also the `.tables` meta-command of the `sqlite3` CLI.
+
+_
     args => {
         %args_common,
     },
@@ -50,6 +55,11 @@ sub list_sqlite_tables {
 
 $SPEC{list_sqlite_columns} = {
     v => 1.1,
+    description => <<'_',
+
+See also the `.schema` and `.fullschema` meta-command of the `sqlite3` CLI.
+
+_
     args => {
         %args_common,
         %arg1_table,
