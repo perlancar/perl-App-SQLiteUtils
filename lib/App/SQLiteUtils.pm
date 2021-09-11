@@ -1,13 +1,13 @@
 package App::SQLiteUtils;
 
+use 5.010001;
+use strict;
+use warnings;
+
 # AUTHORITY
 # DATE
 # DIST
 # VERSION
-
-use 5.010001;
-use strict;
-use warnings;
 
 our %SPEC;
 
@@ -29,6 +29,12 @@ our %arg1_table = (
         schema => 'str*',
         req => 1,
         pos => 1,
+    },
+);
+
+our %argopt_table = (
+    table => {
+        schema => 'str*',
     },
 );
 
@@ -73,6 +79,46 @@ sub list_sqlite_columns {
     my %args = @_;
     my $dbh = _connect(\%args);
     [DBIx::Util::Schema::list_columns($dbh, $args{table})];
+}
+
+$SPEC{import_csv_to_sqlite} = {
+    v => 1.1,
+    summary => 'Import a CSV file into SQLite database',
+    description => <<'_',
+
+This tool utilizes the `sqlite3` command-line client to import a CSV file into
+SQLite database. It pipes the following commands to the `sqlite3` CLI:
+
+    .mode csv
+    .import FILENAME TABLENAME
+
+where FILENAME is the CSV filename and TABLENAME is the table name. If the
+`table` option is not specified, the table name will be derived from the CSV
+filename (e.g. 'stdin' for '-', 't1' for '/path/to/t1.csv', 'table2' for
+'./2.csv' and so on).
+
+_
+    args => {
+        %args_common,
+        csv_file => {
+            schema => 'filename*',
+            default => '-',
+            pos => 1,
+        },
+        %argopt_table,
+    },
+    deps => {
+        prog => 'sqlite3', # XXX allow customizing path?
+    },
+};
+sub import_csv_to_sqlite {
+    my %args = @_;
+    my $q;
+
+    my $dbh = _connect(\%args); # just to check/create the db
+    $dbh->disconnect; # we're releasing any locks
+
+    open my $h, "| sqlite3 ".String::ShellQuote::shell_quote();
 }
 
 1;
