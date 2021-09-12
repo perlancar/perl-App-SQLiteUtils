@@ -3,6 +3,9 @@ package App::SQLiteUtils;
 use 5.010001;
 use strict;
 use warnings;
+use Log::ger;
+
+use Expect;
 
 # AUTHORITY
 # DATE
@@ -12,6 +15,8 @@ use warnings;
 our %SPEC;
 
 sub _connect {
+    require DBI;
+
     my $args = shift;
     DBI->connect("dbi:SQLite:dbname=$args->{db_file}", undef, undef, {RaiseError=>1});
 }
@@ -26,7 +31,7 @@ our %args_common = (
 
 our %arg1_table = (
     table => {
-        schema => 'str*',
+        schema => ['str*', min_len=>1],
         req => 1,
         pos => 1,
     },
@@ -51,7 +56,6 @@ _
     result_naked => 1,
 };
 sub list_sqlite_tables {
-    require DBI;
     require DBIx::Util::Schema;
 
     my %args = @_;
@@ -73,7 +77,6 @@ _
     result_naked => 1,
 };
 sub list_sqlite_columns {
-    require DBI;
     require DBIx::Util::Schema;
 
     my %args = @_;
@@ -106,19 +109,148 @@ _
             pos => 1,
         },
         %argopt_table,
+        # XXX allow customizing Expect timeout, for larger table
     },
     deps => {
         prog => 'sqlite3', # XXX allow customizing path?
     },
 };
 sub import_csv_to_sqlite {
+    require DBIx::Util::Schema;
+    require Expect;
+    require File::Temp;
+    require String::ShellQuote;
+
     my %args = @_;
-    my $q;
+    my $csv_file = $args{csv_file} // '-';
 
-    my $dbh = _connect(\%args); # just to check/create the db
-    $dbh->disconnect; # we're releasing any locks
+    my $dbh = _connect(\%args);
 
-    open my $h, "| sqlite3 ".String::ShellQuote::shell_quote();
+    my $table = $args{table};
+  PICK_TABLE_NAME: {
+        last if defined $table;
+        if ($csv_file eq '-') {
+            $table = 'stdin';
+            last;
+        }
+        $table = $csv_file;
+        $table =~ s!.+/!!;
+        $table =~ s!(?:\.\w+)+\z!!;
+        $table =~ s!\W+!_!g;
+        $table = "t" unless length $table;
+        $table = "t$table" if $table =~ /\A[0-9]/;
+        my $table0 = $table;
+        my $i = 1;
+        while (DBIx::Util::Schema::table_exists($dbh, $table)) {
+            $i++;
+            $table = "${table0}_$i";
+        }
+        log_trace "Picking table name: %s", $table;
+    }
+
+    if ($csv_file eq '-') {
+        my ($tempfh, $tempfile) = File::Temp::tempfile();
+        print $tempfh while <STDIN>;
+        close $tempfh;
+        $csv_file = $tempfile;
+    }
+
+    $dbh->disconnect; # we're releasing any locks, for sqlite3 CLI client
+
+    my $exp = Expect->spawn("sqlite3", $args{db_file})
+        or die "import_csv_to_sqlite(): Cannot spawn command: $!\n";
+    if (log_is_trace()) { $exp->exp_internal(1) }
+    unless (log_is_trace()) { $exp->log_stdout(0) }
+    #$exp->debug(3);
+
+    $exp->expect(
+        2,
+        [
+            qr/sqlite> $/,
+            sub {
+                my $self = shift;
+                $exp->clear_accum;
+                $exp->send(".mode csv\n");
+            },
+        ],
+        [
+            'eof',
+            sub {
+                die "sqlite3 exits prematurely";
+            },
+        ],
+        [
+            'timeout',
+            sub {
+                die "Unexpected sqlite3 response";
+            },
+        ],
+    );
+
+    $exp->expect(
+        2,
+        [
+            qr/sqlite> $/,
+            sub {
+                my $self = shift;
+                $exp->clear_accum;
+                $exp->send(".import ". String::ShellQuote::shell_quote($csv_file) . " \"" . $table . "\"\n");
+            },
+        ],
+        [
+            'eof',
+            sub {
+                die "sqlite3 exits prematurely";
+            },
+        ],
+        [
+            'timeout',
+            sub {
+                die "Unexpected sqlite3 response";
+            },
+        ],
+    );
+
+    $exp->expect(
+        30,
+        [
+            qr/Error: (.+)/,
+            sub {
+                my $self = shift;
+                $exp->clear_accum;
+                my @m = $exp->matchlist;
+                die "Can't import: $m[0]";
+            },
+        ],
+        [
+            qr/sqlite> $/,
+            sub {
+                my $self = shift;
+                # import success
+            },
+        ],
+        [
+            'eof',
+            sub {
+                die "sqlite3 exits prematurely";
+            },
+        ],
+        [
+            'timeout',
+            sub {
+                die "Unexpected sqlite3 response";
+            },
+        ],
+    );
+
+    # there's still a ~1 second delay which i don't know how to avoid yet,
+    # including with hard_close().
+    #$exp->hard_close;
+
+    [200, "OK", undef, {
+        'func.table' => $table,
+        'cmdline.result' => "Imported to table $table",
+    }];
 }
 
 1;
