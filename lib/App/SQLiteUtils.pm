@@ -211,6 +211,7 @@ sub import_csv_to_sqlite {
         ],
     );
 
+    my $err;
     $exp->expect(
         30,
         [
@@ -219,7 +220,7 @@ sub import_csv_to_sqlite {
                 my $self = shift;
                 $exp->clear_accum;
                 my @m = $exp->matchlist;
-                die "Can't import: $m[0]";
+                $err = $m[0];
             },
         ],
         [
@@ -246,6 +247,10 @@ sub import_csv_to_sqlite {
     # there's still a ~1 second delay which i don't know how to avoid yet,
     # including with hard_close().
     #$exp->hard_close;
+
+    if ($err) {
+        return [500, "Can't import: $err"];
+    }
 
     [200, "OK", undef, {
         'func.table' => $table,
