@@ -93,12 +93,28 @@ This tool utilizes the `sqlite3` command-line client to import a CSV file into
 SQLite database. It pipes the following commands to the `sqlite3` CLI:
 
     .mode csv
-    .import FILENAME TABLENAME
+    .import CSVNAME TABLENAME
 
-where FILENAME is the CSV filename and TABLENAME is the table name. If the
-`table` option is not specified, the table name will be derived from the CSV
-filename (e.g. 'stdin' for '-', 't1' for '/path/to/t1.csv', 'table2' for
-'./2.csv' and so on).
+where CSVNAME is the CSV filename and TABLENAME is the table name.
+
+If CSV filename is not specified, will be assumed to be `-` (stdin).
+
+If table name is not specified, it will be derived from the CSV filename
+(basename) with extension removed. `-` will become `stdin`. All non-alphanumeric
+characters will be replaced with `_` (underscore). If filename starts with
+number, `t` prefix will be added. If table already exists, a suffix of `_2`,
+`_3`, and so on will be added. Some examples:
+
+    CSV filename          Table name         Note
+    ------------          ----------         ----
+    -                     stdin
+    -                     stdin_2            If 'stdin` already exists
+    /path/to/t1.csv       t1
+    /path/to/t1.csv       t1_2               If 't1` already exists
+    /path/to/t1.csv       t1_3               If 't1` and `t1_2` already exist
+    ./2.csv               t2
+    report 2021.csv       report_2021
+    report 2021.rev1.csv  report_2021
 
 _
     args => {
