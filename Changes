@@ -2,15 +2,15 @@
 
 	- No functional changes.
 
-	- [cli import-csv-to-sqlite] Mention how sqlite3 cli can also be used
-	  non-interactively.
+	- [doc] [cli import-csv-to-sqlite] Mention how sqlite3 cli can also be
+	  used non-interactively.
 
 
 0.004   2021-09-13  Released-By: PERLANCAR; Urgency: low
 
 	- No functional changes.
 
-	- [cli import-csv-to-sqlite] Expand/fix description.
+	- [doc] [cli import-csv-to-sqlite] Expand/fix description.
 
 
 0.003   2021-09-12  Released-By: PERLANCAR; Urgency: medium
