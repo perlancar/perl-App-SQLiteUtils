@@ -116,6 +116,13 @@ number, `t` prefix will be added. If table already exists, a suffix of `_2`,
     report 2021.csv       report_2021
     report 2021.rev1.csv  report_2021
 
+Note that the **sqlite3** CLI client can be used non-interactively as well. You
+can pipe the commands to its stdin, e.g.:
+
+    % echo -e ".mode csv\n.import /PATH/TO/FILE.CSV TABLENAME" | sqlite3 DB_FILE
+
+But this utility gives you convenience of picking a table name automatically.
+
 _
     args => {
         %args_common,
