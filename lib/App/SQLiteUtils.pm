@@ -21,7 +21,7 @@ sub _connect {
     DBI->connect("dbi:SQLite:dbname=$args->{db_file}", undef, undef, {RaiseError=>1});
 }
 
-our %args_common = (
+our %argspec0_db_file = (
     db_file => {
         schema => 'filename*',
         req => 1,
@@ -29,7 +29,19 @@ our %args_common = (
     },
 );
 
-our %arg1_table = (
+our %argspec1_db_file = (
+    db_file => {
+        schema => 'filename*',
+        req => 1,
+        pos => 1,
+    },
+);
+
+our %argspecs_common = (
+    %argspec0_db_file,
+);
+
+our %argspec1_table = (
     table => {
         schema => ['str*', min_len=>1],
         req => 1,
@@ -37,7 +49,7 @@ our %arg1_table = (
     },
 );
 
-our %argopt_table = (
+our %argspecopt_table = (
     table => {
         schema => 'str*',
     },
@@ -51,7 +63,7 @@ See also the `.tables` meta-command of the `sqlite3` CLI.
 
 _
     args => {
-        %args_common,
+        %argspecs_common,
     },
     result_naked => 1,
 };
@@ -71,8 +83,8 @@ See also the `.schema` and `.fullschema` meta-command of the `sqlite3` CLI.
 
 _
     args => {
-        %args_common,
-        %arg1_table,
+        %argspecs_common,
+        %argspec1_table,
     },
     result_naked => 1,
 };
@@ -125,13 +137,13 @@ But this utility gives you convenience of picking a table name automatically.
 
 _
     args => {
-        %args_common,
         csv_file => {
             schema => 'filename*',
             default => '-',
-            pos => 1,
+            pos => 0,
         },
-        %argopt_table,
+        %argspec1_db_file,
+        %argspecopt_table,
         # XXX allow customizing Expect timeout, for larger table
     },
     deps => {
