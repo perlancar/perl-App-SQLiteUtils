@@ -120,10 +120,10 @@ number, `t` prefix will be added. If table already exists, a suffix of `_2`,
     CSV filename          Table name         Note
     ------------          ----------         ----
     -                     stdin
-    -                     stdin_2            If 'stdin` already exists
+    -                     stdin_2            If 'stdin' already exists
     /path/to/t1.csv       t1
-    /path/to/t1.csv       t1_2               If 't1` already exists
-    /path/to/t1.csv       t1_3               If 't1` and `t1_2` already exist
+    /path/to/t1.csv       t1_2               If 't1' already exists
+    /path/to/t1.csv       t1_3               If 't1' and 't1_2' already exist
     ./2.csv               t2
     report 2021.csv       report_2021
     report 2021.rev1.csv  report_2021
